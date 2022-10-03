@@ -1,14 +1,42 @@
-main: main.o speech.o event.o
-	g++ -o main main.o speech.o event.o
+CC := g++
 
-main.o: main.cpp speech.h event.h
-	g++ -c main.cpp
+SRCDIR = src
+BUILDDIR = build
+BINDIR = bin
+INCLUDEDIR = include
+TESTDIR = tests
+TARGET = bin/main
+SRCEXT := cpp
 
-speech.o: speech.cpp speech.h
-	g++ -c speech.cpp
+CFLAGS = -g -Wall -Wextra -pedantic -Weffc++
+LIB = -L lib
+INC = -I include
 
-event.o: event.cpp event.h
-	g++ -c event.cpp
+SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
+
+
+$(TARGET): $(OBJECTS)
+	@mkdir -p $(BINDIR)
+	@echo " Linking..."
+	@echo $(SOURCES)
+	@echo $(OBJECTS)
+	@echo " $(CC) $^ -o $(TARGET) $(LIB)"; $(CC) $^ -o $(TARGET) $(LIB)
+
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p $(BUILDDIR)
+	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
+
 
 clean:
-	\rm -f *.o main
+	@echo "Cleaning."
+	$(RM) -r $(BUILDDIR) $(BINDIR) $(TARGET)
+
+
+tests: $(filter-out build/main.o, $(OBJECTS))
+	@mkdir -p $(BINDIR)
+	@echo " $(CC) $(CFLAGS) $(INC) $(LIB) -c -o $(BUILDDIR)/test.o $(TESTDIR)/tester.cpp"; $(CC) $(CFLAGS) $(INC) $(LIB) -c -o $(BUILDDIR)/test.o $(TESTDIR)/tester.cpp
+	@echo " $(CC) $^ $(BUILDDIR)/test.o -o $(BINDIR)/test"; $(CC) $^ $(BUILDDIR)/test.o -o $(BINDIR)/test
+
+.PHONY: clean
